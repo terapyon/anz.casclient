@@ -17,6 +17,8 @@ Changelog
 
  - Clean paster plugins in setup.py [sneridagh]
 
+ - Modify exception for expired Ticket to re-try 'caslogin' [terapyon]
+
 1.0.1
 -----
 

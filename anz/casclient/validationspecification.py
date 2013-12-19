@@ -158,6 +158,8 @@ class Cas20ServiceTicketValidator( TicketValidator ):
                 principal = Principal( userId )
             
             return Assertion( principal )
+        except TicketValidationException,e:
+            return self.REQUEST.RESPONSE.redirect('caslogin')
         except Exception, e:
             raise InternalException( str(e) )
 
