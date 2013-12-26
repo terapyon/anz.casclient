@@ -127,6 +127,9 @@ class AnzCASClient( BasePlugin, Cacheable ):
     # These URLs are proxier's proxyCallbackUrl.
     allowedProxyChains = []
 
+    # Allowed Redirect From Cookie
+    allowedRedirectFromCookie = False
+
     security = ClassSecurityInfo()
 
     _properties = (
@@ -183,6 +186,12 @@ class AnzCASClient( BasePlugin, Cacheable ):
             'id': 'allowedProxyChains',
             'label': 'Allowed Proxy Chains',
             'type': 'lines',
+            'mode': 'w'
+            },
+        {
+            'id': 'allowedRedirectFromCookie',
+            'lable': 'Allowed Redirect From Cookie',
+            'type': 'boolean',
             'mode': 'w'
             },
         )
@@ -254,10 +263,11 @@ class AnzCASClient( BasePlugin, Cacheable ):
                 session.set( self.CAS_ASSERTION, assertion )
 
         creds['login'] = assertion.getPrincipal().getId()
-        _redirect_url = request.cookies.get(self.CAS_REDIRECT_URL)
-        if _redirect_url is not None:
-            request.response.expireCookie(self.CAS_REDIRECT_URL)
-            return request.response.redirect(_redirect_url)
+        if self.allowedRedirectFromCookie:
+            _redirect_url = request.cookies.get(self.CAS_REDIRECT_URL)
+            if _redirect_url is not None:
+                request.response.expireCookie(self.CAS_REDIRECT_URL)
+                return request.response.redirect(_redirect_url)
         return creds
 
     security.declarePrivate( 'authenticateCredentials' )
@@ -274,7 +284,8 @@ class AnzCASClient( BasePlugin, Cacheable ):
         # Remove current credentials.
         session = request.SESSION
         session[self.CAS_ASSERTION] = None
-        response.setCookie(self.CAS_REDIRECT_URL, request.URL1, path='/')
+        if self.allowedRedirectFromCookie:
+            response.setCookie(self.CAS_REDIRECT_URL, request.URL1, path='/')
 
         # Redirect to CAS login URL.
         if self.casServerUrlPrefix:
