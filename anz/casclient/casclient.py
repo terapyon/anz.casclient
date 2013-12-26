@@ -254,6 +254,10 @@ class AnzCASClient( BasePlugin, Cacheable ):
                 session.set( self.CAS_ASSERTION, assertion )
 
         creds['login'] = assertion.getPrincipal().getId()
+        _redirect_url = request.cookies.get(self.CAS_REDIRECT_URL)
+        if _redirect_url is not None:
+            request.response.expireCookie(self.CAS_REDIRECT_URL)
+            return request.response.redirect(_redirect_url)
         return creds
 
     security.declarePrivate( 'authenticateCredentials' )
