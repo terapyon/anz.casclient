@@ -63,6 +63,7 @@ class AnzCASClient( BasePlugin, Cacheable ):
 
     # Session variable use to save assertion
     CAS_ASSERTION = '__cas_assertion'
+    CAS_REDIRECT_URL = '__anz_casclient_redirect_url'
 
     # The start of the CAS server URL
     casServerUrlPrefix = ''
@@ -269,6 +270,7 @@ class AnzCASClient( BasePlugin, Cacheable ):
         # Remove current credentials.
         session = request.SESSION
         session[self.CAS_ASSERTION] = None
+        response.setCookie(self.CAS_REDIRECT_URL, request.URL1, path='/')
 
         # Redirect to CAS login URL.
         if self.casServerUrlPrefix:
