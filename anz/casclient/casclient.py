@@ -285,7 +285,7 @@ class AnzCASClient( BasePlugin, Cacheable ):
         session = request.SESSION
         session[self.CAS_ASSERTION] = None
         if self.allowedRedirectFromCookie:
-            response.setCookie(self.CAS_REDIRECT_URL, request.URL1, path='/')
+            response.setCookie(self.CAS_REDIRECT_URL, request.URL0, path='/')
 
         # Redirect to CAS login URL.
         if self.casServerUrlPrefix:
