@@ -281,11 +281,18 @@ class AnzCASClient( BasePlugin, Cacheable ):
     security.declarePrivate( 'challenge' )
     def challenge( self, request, response, **kw ):
         ''' Challenge the user for credentials. '''
-        # Remove current credentials.
         session = request.SESSION
+        try:
+            login = session[self.CAS_ASSERTION].getPrincipal().getId()
+        except (LookupError, TypeError):
+            login = None
+        # Remove current credentials.
         session[self.CAS_ASSERTION] = None
         if self.allowedRedirectFromCookie:
-            response.setCookie(self.CAS_REDIRECT_URL, request.URL0, path='/')
+            if login is None:
+                response.setCookie(self.CAS_REDIRECT_URL, request.URL0, path='/')
+            else:
+                response.setCookie(self.CAS_REDIRECT_URL, request.URL2, path='/')
 
         # Redirect to CAS login URL.
         if self.casServerUrlPrefix:
