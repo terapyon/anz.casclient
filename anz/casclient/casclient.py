@@ -19,6 +19,7 @@ from Products.PluggableAuthService.utils import classImplements
 from Products.PluggableAuthService.interfaces.plugins import \
         IExtractionPlugin, IChallengePlugin, IAuthenticationPlugin, \
         ICredentialsResetPlugin, ICredentialsUpdatePlugin
+from Products.statusmessages.interfaces import IStatusMessage
 
 from anz.casclient.interfaces import IAnzCASClient
 from anz.casclient.assertion import Assertion
@@ -64,6 +65,7 @@ class AnzCASClient( BasePlugin, Cacheable ):
     # Session variable use to save assertion
     CAS_ASSERTION = '__cas_assertion'
     CAS_REDIRECT_URL = '__anz_casclient_redirect_url'
+    CAS_REDIRECT_MSG = '__anz_casclient_redirect_msg'
 
     # The start of the CAS server URL
     casServerUrlPrefix = ''
@@ -130,6 +132,8 @@ class AnzCASClient( BasePlugin, Cacheable ):
     # Allowed Redirect From Cookie
     allowedRedirectFromCookie = False
 
+    specificRedirectLinks = []
+
     security = ClassSecurityInfo()
 
     _properties = (
@@ -192,6 +196,12 @@ class AnzCASClient( BasePlugin, Cacheable ):
             'id': 'allowedRedirectFromCookie',
             'lable': 'Allowed Redirect From Cookie',
             'type': 'boolean',
+            'mode': 'w'
+            },
+        {
+            'id': 'specificRedirectLinks',
+            'lable': 'Specific Redirect link if allowedRedirectFromCookie == True, condition|link_url|message',
+            'type': 'lines',
             'mode': 'w'
             },
         )
@@ -267,6 +277,13 @@ class AnzCASClient( BasePlugin, Cacheable ):
             _redirect_url = request.cookies.get(self.CAS_REDIRECT_URL)
             if _redirect_url is not None:
                 request.response.expireCookie(self.CAS_REDIRECT_URL)
+                _msg = request.cookies.get(self.CAS_REDIRECT_MSG)
+                if _msg:
+                    messages = IStatusMessage(request)
+                    if not isinstance(_msg, unicode):
+                        _msg = _msg.decode('utf-8')
+                    messages.add(_msg, type=u"info")
+                    request.response.expireCookie(self.CAS_REDIRECT_MSG)
                 return request.response.redirect(_redirect_url)
         return creds
 
@@ -292,7 +309,34 @@ class AnzCASClient( BasePlugin, Cacheable ):
             if login is None:
                 response.setCookie(self.CAS_REDIRECT_URL, request.URL0, path='/')
             else:
-                response.setCookie(self.CAS_REDIRECT_URL, request.URL2, path='/')
+                org_url = request.URL0
+                _url = ""
+                _msg = ""
+                specific_links = []
+                for data in self.specificRedirectLinks:
+                    if not data.strip():
+                        continue
+                    try:
+                        specific_links.append([d.strip() for d in data.strip().split("|", 2)])
+                    except:
+                        pass
+                for link in specific_links:
+                    if link[0] in org_url:
+                        if len(link) > 1:
+                            _url = request.BASE0 + "/" + link[1]
+                        if len(link) > 2:
+                            _msg = link[2]
+                        break
+                if not _url:
+                    if hasattr(request, 'URL2'):
+                        _url = request.URL2
+                    elif hasattr(request, 'URL1'):
+                        _url = request.URL1
+                    else:
+                        _url = org_url
+                response.setCookie(self.CAS_REDIRECT_URL, _url, path='/')
+                if _msg:
+                    response.setCookie(self.CAS_REDIRECT_MSG, _msg, path='/')
 
         # Redirect to CAS login URL.
         if self.casServerUrlPrefix:

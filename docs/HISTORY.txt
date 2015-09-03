@@ -19,7 +19,7 @@ Changelog
 
  - Modify exception for expired Ticket to re-try 'caslogin' [terapyon]
  - Adding cookie for redirect url [terapyon]
- 
+ - Added specificRedirectLinks property and created the function [terapyon]
 
 1.0.1
 -----
